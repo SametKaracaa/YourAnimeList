@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kayıt Ol - Anime Listem</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div class="container">
+    <div class="row justify-content-center" style="padding-top: 6vh;">
+        <div class="col-md-6 col-lg-5">
+
+            <div class="card glass-panel shadow-lg">
+                <div class="card-body p-4 p-md-5">
+
+                    <div class="text-center mb-4">
+                        <div class="display-5 mb-2">✨</div>
+                        <h2 class="fw-bold mb-1">Hesap Oluştur</h2>
+                        <p class="text-muted small mb-0">Anime listenizi takip etmeye başlayın</p>
+                    </div>
+
+                    <form th:action="@{/kayit}" th:object="${user}" method="post" novalidate>
+
+                        <!-- Global (form-wide) hata; ör. registration.error -->
+                        <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger" role="alert">
+                            <ul class="mb-0 ps-3">
+                                <li th:each="err : ${#fields.globalErrors()}" th:text="${err}"></li>
+                            </ul>
+                        </div>
+
+                        <!-- Kullanıcı Adı -->
+                        <div class="mb-3">
+                            <label for="kullaniciAdi" class="form-label fw-medium">Kullanıcı Adı</label>
+                            <div class="input-group has-validation">
+                                <span class="input-group-text bg-white"><i class="bi bi-person"></i></span>
+                                <input type="text"
+                                       class="form-control"
+                                       th:classappend="${#fields.hasErrors('kullaniciAdi')} ? 'is-invalid' : ''"
+                                       id="kullaniciAdi"
+                                       th:field="*{kullaniciAdi}"
+                                       placeholder="3-50 karakter"
+                                       required>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('kullaniciAdi')}"
+                                     th:errors="*{kullaniciAdi}">Hata</div>
+                            </div>
+                        </div>
+
+                        <!-- E-posta -->
+                        <div class="mb-3">
+                            <label for="email" class="form-label fw-medium">E-posta</label>
+                            <div class="input-group has-validation">
+                                <span class="input-group-text bg-white"><i class="bi bi-envelope"></i></span>
+                                <input type="email"
+                                       class="form-control"
+                                       th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''"
+                                       id="email"
+                                       th:field="*{email}"
+                                       placeholder="ornek@mail.com"
+                                       required>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}"
+                                     th:errors="*{email}">Hata</div>
+                            </div>
+                        </div>
+
+                        <!-- Şifre -->
+                        <div class="mb-4">
+                            <label for="sifre" class="form-label fw-medium">Şifre</label>
+                            <div class="input-group has-validation">
+                                <span class="input-group-text bg-white"><i class="bi bi-lock"></i></span>
+                                <input type="password"
+                                       class="form-control"
+                                       th:classappend="${#fields.hasErrors('sifre')} ? 'is-invalid' : ''"
+                                       id="sifre"
+                                       th:field="*{sifre}"
+                                       placeholder="en az 6 karakter"
+                                       required>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('sifre')}"
+                                     th:errors="*{sifre}">Hata</div>
+                            </div>
+                            <small class="form-text text-muted">Şifreniz BCrypt ile şifrelenerek saklanır.</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-medium mb-3">
+                            <i class="bi bi-person-plus me-1"></i> Kayıt Ol
+                        </button>
+                    </form>
+
+                    <div class="text-center small">
+                        <span class="text-muted">Zaten hesabınız var mı?</span>
+                        <a th:href="@{/giris}" class="text-decoration-none fw-medium">Giriş Yap</a>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
