@@ -38,9 +38,8 @@ public interface UserAnimeListRepository extends JpaRepository<UserAnimeList, Lo
            SELECT ual FROM UserAnimeList ual
            JOIN FETCH ual.anime
            WHERE ual.kullanici = :kullanici
-           ORDER BY ual.eklenmeTarihi DESC
            """)
-    List<UserAnimeList> findByKullaniciWithAnime(@Param("kullanici") User kullanici);
+    List<UserAnimeList> findByKullaniciWithAnime(@Param("kullanici") User kullanici, org.springframework.data.domain.Sort sort);
 
     /**
      * Bir liste satırını yalnızca SAHİBİ ise getirir.
@@ -86,14 +85,14 @@ public interface UserAnimeListRepository extends JpaRepository<UserAnimeList, Lo
              AND (:studyo IS NULL OR :studyo = '' OR LOWER(a.studyo)   LIKE LOWER(CONCAT('%', :studyo, '%')))
              AND (:yil    IS NULL OR a.yayinYili = :yil)
              AND (:durum  IS NULL OR ual.izlemeDurumu = :durum)
-           ORDER BY ual.eklenmeTarihi DESC
            """)
     List<UserAnimeList> ara(@Param("kullanici") User         kullanici,
                             @Param("isim")      String       isim,
                             @Param("tur")       String       tur,
                             @Param("studyo")    String       studyo,
                             @Param("yil")       Integer      yil,
-                            @Param("durum")     IzlemeDurumu durum);
+                            @Param("durum")     IzlemeDurumu durum,
+                            org.springframework.data.domain.Sort sort);
 
 
     // ============================================================

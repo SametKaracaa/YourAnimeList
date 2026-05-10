@@ -8,11 +8,11 @@ package com.animelistapp.entity;
  */
 public enum IzlemeDurumu {
 
-    WATCHING("Watching"),
-    COMPLETED("Completed"),
-    ON_HOLD("On Hold"),
-    DROPPED("Dropped"),
-    PLAN_TO_WATCH("Plan to Watch");
+    WATCHING("İzleniyor"),
+    COMPLETED("Tamamlandı"),
+    ON_HOLD("Beklemede"),
+    DROPPED("Bırakıldı"),
+    PLAN_TO_WATCH("İzlenecek");
 
     /** Kullanıcı arayüzünde gösterilecek etiket */
     private final String etiket;
