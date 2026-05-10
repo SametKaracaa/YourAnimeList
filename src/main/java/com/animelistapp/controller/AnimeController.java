@@ -70,6 +70,8 @@ public class AnimeController {
                         @RequestParam(required = false) String studyo,
                         @RequestParam(required = false) String yilStr,
                         @RequestParam(required = false) String durum,
+                        @RequestParam(required = false) String siralama,
+                        @RequestParam(required = false, defaultValue = "desc") String yon,
                         Authentication authentication,
                         Model model) {
 
@@ -87,8 +89,8 @@ public class AnimeController {
                             || temizStudyo != null || yil != null || durumEnum != null;
 
         java.util.List<UserAnimeList> liste = filtreVarMi
-                ? ualService.ara(user, temizIsim, temizTur, temizStudyo, yil, durumEnum)
-                : ualService.kullanicininListesi(user);
+                ? ualService.ara(user, temizIsim, temizTur, temizStudyo, yil, durumEnum, siralama, yon)
+                : ualService.kullanicininListesi(user, siralama, yon);
 
         // İstatistik kartları
         long toplam      = ualService.toplamSayi(user);
@@ -111,6 +113,8 @@ public class AnimeController {
         model.addAttribute("aramaStudyo", temizStudyo);
         model.addAttribute("aramaYil",    yil);
         model.addAttribute("aramaDurum",  durumEnum);
+        model.addAttribute("aramaSiralama", siralama);
+        model.addAttribute("aramaYon", yon);
 
         // Filtre dropdown'ları
         model.addAttribute("turler",         animeService.tumTurleriGetir());

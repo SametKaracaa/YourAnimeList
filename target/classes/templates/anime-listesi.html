@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anime Listem</title>
+    <title>YourAnimeList</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/style.css}">
@@ -27,7 +27,7 @@
 <!-- ========== NAVBAR ========== -->
 <nav class="navbar navbar-custom navbar-dark sticky-top">
     <div class="container py-2">
-        <a class="navbar-brand fw-bold" th:href="@{/anime/liste}">🎌 Anime Listem</a>
+        <a class="navbar-brand fw-bold" th:href="@{/anime/liste}">🎌 YourAnimeList</a>
         <div class="d-flex align-items-center text-white-50 small">
             <i class="bi bi-person-circle me-1"></i>
             <span class="me-3" th:text="${kullaniciAdi}">user</span>
@@ -161,9 +161,34 @@
             Listem
             <span class="badge bg-secondary ms-1" th:text="${#lists.size(liste)}">0</span>
         </h5>
-        <a th:href="@{/anime/ekle}" class="btn btn-primary">
-            <i class="bi bi-plus-lg"></i> Yeni Anime Ekle
-        </a>
+        <div class="d-flex gap-2">
+            <!-- Sıralama Dropdown (Filtreleri kaybetmemek için hidden inputlar içerir) -->
+            <form th:action="@{/anime/liste}" method="get" class="m-0 d-flex align-items-center gap-1" id="sortForm">
+                <input type="hidden" name="isim" th:value="${aramaIsim}">
+                <input type="hidden" name="tur" th:value="${aramaTur}">
+                <input type="hidden" name="studyo" th:value="${aramaStudyo}">
+                <input type="hidden" name="yilStr" th:value="${aramaYil}">
+                <input type="hidden" name="durum" th:value="${aramaDurum}">
+                
+                <!-- Yön (asc/desc) tutan input -->
+                <input type="hidden" name="yon" id="sortYon" th:value="${aramaYon != null ? aramaYon : 'desc'}">
+                
+                <select name="siralama" class="form-select form-select-sm" onchange="document.getElementById('sortForm').submit()" style="min-width: 170px; cursor: pointer;">
+                    <option value="eklenmeTarihi" th:selected="${aramaSiralama == null or aramaSiralama == 'eklenmeTarihi'}">📅 Ekleme Tarihine Göre</option>
+                    <option value="yayinYili" th:selected="${aramaSiralama == 'yayinYili'}">🎬 Çıkış Tarihine Göre</option>
+                    <option value="puan" th:selected="${aramaSiralama == 'puan'}">⭐ Puana Göre</option>
+                    <option value="animeAdi" th:selected="${aramaSiralama == 'animeAdi'}">🔤 İsme Göre</option>
+                </select>
+                
+                <!-- Yön Değiştirici Buton -->
+                <button type="button" class="btn btn-sm btn-outline-light" onclick="toggleSortDirection()" title="Sıralama Yönünü Çevir">
+                    <i class="bi" th:classappend="${aramaYon == 'asc' ? 'bi-sort-up' : 'bi-sort-down'}"></i>
+                </button>
+            </form>
+            <a th:href="@{/anime/ekle}" class="btn btn-primary btn-sm d-flex align-items-center">
+                <i class="bi bi-plus-lg me-1"></i> Yeni Anime Ekle
+            </a>
+        </div>
     </div>
 
     <!-- ========== LİSTE BOŞ DURUMU ========== -->
@@ -236,5 +261,16 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function toggleSortDirection() {
+        const yonInput = document.getElementById('sortYon');
+        if(yonInput.value === 'asc') {
+            yonInput.value = 'desc';
+        } else {
+            yonInput.value = 'asc';
+        }
+        document.getElementById('sortForm').submit();
+    }
+</script>
 </body>
 </html>

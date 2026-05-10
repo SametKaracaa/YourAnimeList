@@ -9,6 +9,7 @@ import com.animelistapp.repository.UserAnimeListRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Sort;
 
 import java.util.List;
 import java.util.Optional;
@@ -37,8 +38,8 @@ public class UserAnimeListServiceImpl implements UserAnimeListService {
     // ============================================================
 
     @Override
-    public List<UserAnimeList> kullanicininListesi(User kullanici) {
-        return ualRepository.findByKullaniciWithAnime(kullanici);
+    public List<UserAnimeList> kullanicininListesi(User kullanici, String siralama, String yon) {
+        return ualRepository.findByKullaniciWithAnime(kullanici, siralamaOlustur(siralama, yon));
     }
 
     @Override
@@ -103,6 +104,23 @@ public class UserAnimeListServiceImpl implements UserAnimeListService {
         return ualRepository.save(kayit);
     }
 
+    /** Sıralama parametresinden Sort nesnesi oluşturur. */
+    private Sort siralamaOlustur(String siralama, String yon) {
+        boolean isAsc = "asc".equalsIgnoreCase(yon);
+        Sort.Direction direction = isAsc ? Sort.Direction.ASC : Sort.Direction.DESC;
+
+        if ("puan".equals(siralama)) {
+            return Sort.by(direction, "puan");
+        } else if ("yayinYili".equals(siralama)) {
+            return Sort.by(direction, "anime.yayinYili");
+        } else if ("animeAdi".equals(siralama)) {
+            return Sort.by(direction, "anime.animeAdi");
+        }
+        
+        // Varsayılan: eklenme tarihi (Bizim Ekleme Tarihimiz)
+        return Sort.by(direction, "eklenmeTarihi");
+    }
+
     /**
      * COMPLETED'da izlenen bölümü her zaman toplam bölüme eşitle (toplam biliniyorsa).
      * Aksi halde: 0 ile toplam arasına sıkıştır; toplam null ise olduğu gibi bırak.
@@ -138,8 +156,8 @@ public class UserAnimeListServiceImpl implements UserAnimeListService {
     @Override
     public List<UserAnimeList> ara(User kullanici,
                                    String isim, String tur, String studyo,
-                                   Integer yil, IzlemeDurumu durum) {
-        return ualRepository.ara(kullanici, isim, tur, studyo, yil, durum);
+                                   Integer yil, IzlemeDurumu durum, String siralama, String yon) {
+        return ualRepository.ara(kullanici, isim, tur, studyo, yil, durum, siralamaOlustur(siralama, yon));
     }
 
     // ============================================================

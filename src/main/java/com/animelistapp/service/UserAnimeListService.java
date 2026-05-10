@@ -16,7 +16,7 @@ import java.util.Optional;
 public interface UserAnimeListService {
 
     /** Kullanıcının izleme listesinin tamamı (anime detaylarıyla). */
-    List<UserAnimeList> kullanicininListesi(User kullanici);
+    List<UserAnimeList> kullanicininListesi(User kullanici, String siralama, String yon);
 
     /** Belirli bir kayıt — yalnızca sahibi olan kullanıcı erişebilir. */
     Optional<UserAnimeList> kayitGetir(Long id, User kullanici);
@@ -42,7 +42,7 @@ public interface UserAnimeListService {
      */
     List<UserAnimeList> ara(User kullanici,
                             String isim, String tur, String studyo,
-                            Integer yil, IzlemeDurumu durum);
+                            Integer yil, IzlemeDurumu durum, String siralama, String yon);
 
     // === İSTATİSTİK ===
     long toplamSayi(User kullanici);
