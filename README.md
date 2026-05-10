@@ -1,80 +1,37 @@
-# 🎌 Anime Listem
+# YourAnimeList Backend (Spring Boot)
 
-Kullanıcıların izledikleri animeleri profesyonel bir şekilde takip edebildikleri, **Jikan API (MyAnimeList)** entegrasyonuna sahip, Spring Boot tabanlı modern bir web uygulamasıdır.
+Bu proje, kullanıcıların anime listelerini yönetmelerini, yeni animeler keşfetmelerini ve izleme durumlarını (İzleniyor, Tamamlandı, vb.) kaydetmelerini sağlayan bir **Spring Boot MVC** uygulamasıdır.
 
----
+## 📂 Dizin Yapısı ve Sınıflar (`src/main/java/com/animelistapp`)
 
-## 🛠 Kullanılan Teknolojiler & Sürümler
+### 1. `config/` (Yapılandırma)
+- **`SecurityConfig.java`**: Spring Security yapılandırmasını içerir. Kullanıcı giriş/çıkış işlemleri, yetkilendirmeler ve public/private rotalar burada belirlenir. Şifrelerin güvenli saklanması için `BCryptPasswordEncoder` kullanılır.
 
-### Backend
-- **Dil:** Java 17
-- **Framework:** Spring Boot 3.2.x
-- **Güvenlik:** Spring Security
-- **Veri Erişim:** Spring Data JPA (Hibernate)
-- **Paket Yöneticisi:** Maven
+### 2. `controller/` (İstek Karşılayıcılar - MVC)
+- **`AnimeController.java`**: Anime listesi, anime ekleme, silme ve düzenleme sayfalarının (`/anime/...`) GET ve POST isteklerini yönetir. Jikan API ve veritabanı arasındaki bağlantıyı koordine eder. Arama, filtreleme ve sıralama gibi UI etkileşimlerini servislere aktarır.
+- **`AuthController.java`**: Kullanıcı kayıt (`/kayit`) ve giriş (`/giris`) sayfalarını yönetir.
 
-### Veritabanı
-- **RDBMS:** MySQL 8+
+### 3. `entity/` (Veritabanı Tabloları)
+- **`Anime.java`**: Sistemdeki tüm animelerin temel bilgilerini (isim, yıl, stüdyo, tür, kapak görseli BLOB verisi) tutan global tablodur.
+- **`User.java`**: Sistemi kullanan kullanıcıların hesap bilgilerini (kullanıcı adı, şifre, rol) tutar.
+- **`UserAnimeList.java`**: Kullanıcı ile Anime arasındaki köprü tablodur. Kullanıcının listesine eklediği animenin durumunu, puanını, izlediği bölüm sayısını ve ekleme tarihini (metadata) tutar.
+- **`IzlemeDurumu.java`** (Enum): Animenin mevcut izleme durumunu belirtir (İzleniyor, Tamamlandı, Beklemede, Bırakıldı, İzlenecek).
 
-### Frontend
-- **Şablon Motoru:** Thymeleaf
-- **UI Kütüphanesi:** Bootstrap 5
-- **Dinamik Mantık:** Vanilla JavaScript (Fetch API ile Asenkron İşlemler)
-- **Stil & Yapı:** HTML5 / Custom CSS3 (Premium Glassmorphism Design)
+### 4. `repository/` (Veritabanı İşlemleri)
+Spring Data JPA arayüzleridir.
+- **`AnimeRepository.java`**: Animeleri ismine veya MyAnimeList ID'sine göre bulmak için arama metotları barındırır.
+- **`UserRepository.java`**: Kullanıcı adı üzerinden db kaydı bulma (giriş yaparken) işlemleri için kullanılır.
+- **`UserAnimeListRepository.java`**: Kullanıcıya ait listeyi filtreleme (isim, tür, çıkış tarihi vb.) ve dinamik sıralama işlemleri için JPQL (`JOIN FETCH`) tabanlı özel ve optimize sorgular içerir.
 
-### Dış API
-- **Veri Kaynağı:** [Jikan API v4](https://docs.api.jikan.moe/) (Resmi olmayan MyAnimeList API'si)
-
----
-
-## ✨ Proje Mimarisi & Öne Çıkan Özellikler
-
-Uygulama, standart MVC (Model-View-Controller) mimarisine uygun olarak katmanlı bir yapıda geliştirilmiştir (`Controller`, `Service`, `Repository`, `Entity`).
-
-### Mimari Detaylar:
-- 🔍 **Akıllı Arama (As-You-Type):** Modal üzerinde anime adını yazarken JavaScript Fetch API ile Jikan API arka planda sorgulanır (Debounce koruması ile). Gelen sonuçlardan seçim yapıldığında form otomatik dolar. Veri tutarlılığı için *Tür, Çıkış Yılı ve Stüdyo* alanları kullanıcı müdahalesine kapalıdır (Readonly).
-- 🖼 **Otomatik Görsel İndirme & BLOB Depolama:** Manuel dosya yükleme zorunluluğu kaldırılmıştır. Seçilen animenin resmi API'den gelen URL kullanılarak arka planda (Backend `Service` katmanı) indirilir ve veritabanına doğrudan `byte[]` (BLOB) olarak kaydedilir.
-- ⚡ **Dinamik UX Mantığı:** "İzleme Durumu" `(Completed)` seçildiğinde, 'İzlenen Bölüm' sayısı otomatik olarak 'Toplam Bölüm'e eşitlenir. Puanlama arka planda `Integer` (1-10) olarak tutulurken, önyüzde Türkçeleştirilmiş (Örn: *10 - Şaheser*) bir enum mantığıyla çalışır.
-- 🛡 **Null-Safe Repository & Exception Handling:** Backend'de dinamik arama yapılırken (isim, tür, yıl bazlı), parametrelerin null veya boş gelmesi ihtimaline karşı alınan güvenlik önlemleri sayesinde uygulama çökmez.
-- 🎨 **Modern Arayüz:** Vanilla CSS ile Glassmorphism efektleri, asenkron `Toast` bildirimleri ve mobil uyumlu (responsive) bir grid tasarımı kullanılmıştır.
+### 5. `service/` (İş Kuralları - Business Logic)
+- **`AnimeService.java` & `AnimeServiceImpl.java`**: Yeni bir anime eklenirken, dışarıdan gelen kapak görseli URL'sini indirip veritabanına (BLOB olarak) kaydetme gibi işlemleri üstlenir.
+- **`UserService.java` & `UserServiceImpl.java`**: Yeni kullanıcı kaydı sırasında şifrenin bcrypt ile hash'lenip veritabanına eklenmesini sağlar.
+- **`CustomUserDetailsService.java`**: Spring Security'nin login ekranında girilen verileri veritabanı ile eşleştirerek doğrulaması için gereken sınıftır.
+- **`UserAnimeListService.java` & `UserAnimeListServiceImpl.java`**: Listeye anime ekleme, çıkarma, güncelleme ve arama algoritmalarını yönetir. Her işlemin sadece listeyi oluşturan kullanıcı tarafından yapılabildiğini (Authorization-Data ownership check) doğrular.
 
 ---
 
-## 🚀 Kurulum ve Çalıştırma Adımları
-
-Projeyi devralıp kendi bilgisayarınızda (Localhost) çalıştırmak için aşağıdaki adımları izleyin:
-
-### 1. Veritabanı Hazırlığı
-MySQL sunucunuzu başlatın ve proje için boş bir veritabanı oluşturun:
-```sql
-CREATE DATABASE anime_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
-
-### 2. Konfigürasyon Ayarları
-`src/main/resources/application.properties` dosyasını açarak veritabanı bilgilerinizi girin:
-```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/anime_db?useSSL=false&serverTimezone=UTC
-spring.datasource.username=root
-spring.datasource.password=sifreniz
-```
-
-### 3. Şema ve Tablo Oluşumu (Kritik)
-Proje ilk kez çalıştırıldığında tabloların (ve test verilerinin) otomatik oluşması için `application.properties` içindeki `ddl-auto` ayarı **`create`** olmalıdır:
-```properties
-spring.jpa.hibernate.ddl-auto=create
-```
-> **ÖNEMLİ:** Proje bir kez çalışıp tablolar oluştuktan sonra, her başlatmada verilerin silinmemesi için bu ayarı mutlaka **`update`** olarak değiştirin!
-
-### 4. Uygulamayı Başlatma
-IntelliJ IDEA, Eclipse veya VS Code üzerinden `AnimeListApplication.java` sınıfını `Run` komutuyla başlatın. (Alternatif olarak terminalde `mvn spring-boot:run` komutunu kullanabilirsiniz). Uygulama `http://localhost:8080` adresinde ayağa kalkacaktır.
-
----
-
-## 👤 Test Kullanıcısı (Seed Data)
-
-Uygulama ilk kez `create` modunda ayağa kalktığında `VeriBaslatici` sınıfı devreye girerek veritabanına MAL (MyAnimeList) standartlarında 5 örnek anime ve bir test hesabı tanımlar. Sisteme aşağıdaki bilgilerle giriş yapabilirsiniz:
-
-- **Kullanıcı Adı:** `testuser`
-- **Şifre:** `password`
-
-İyi kodlamalar! 💻☕
+# USAGE:
+# 1. Proje dizininde (pom.xml'in olduğu yerde) terminali aç.
+# 2. `./mvnw spring-boot:run` komutunu çalıştır veya IDE üzerinden `AnimeListApplication.java` dosyasını çalıştır.
+# 3. Tarayıcıdan http://localhost:8080 adresine gidip projeyi kullanmaya başla. (MySQL'in açık ve properties'teki kimlik bilgilerinin doğru olduğuna emin ol.)
