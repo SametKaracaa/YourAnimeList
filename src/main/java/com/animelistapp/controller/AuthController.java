@@ -2,6 +2,7 @@ package com.animelistapp.controller;
 import com.animelistapp.entity.User;
 import com.animelistapp.service.UserService;
 import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -16,7 +17,14 @@ public class AuthController {
         this.userService = userService;
     }
     @GetMapping("/")
-    public String anaSayfa() {
+    public String anaSayfa(Authentication authentication) {
+        if (authentication != null) {
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+            if (isAdmin) {
+                return "redirect:/admin/panel";
+            }
+        }
         return "redirect:/anime/liste";
     }
     @GetMapping("/giris")

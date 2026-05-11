@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="tr">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -42,6 +44,7 @@
         .jikan-results.show { display: block; }
         .jikan-item {
             display: flex;
+            align-items: center;
             gap: 12px;
             padding: 8px 12px;
             cursor: pointer;
@@ -90,14 +93,18 @@
     </style>
 </head>
 <body>
-
-<!-- ========== NAVBAR ========== -->
 <nav class="navbar navbar-custom navbar-dark sticky-top">
     <div class="container py-2">
         <a class="navbar-brand fw-bold" th:href="@{/anime/liste}">🎌 YourAnimeList</a>
-        <a th:href="@{/anime/liste}" class="btn btn-sm btn-outline-light">
-            <i class="bi bi-arrow-left"></i> Listeye Dön
-        </a>
+        <div class="d-flex align-items-center gap-2">
+            <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/panel}"
+               class="btn btn-sm btn-outline-warning">
+                <i class="bi bi-shield-lock me-1"></i>Admin Panel
+            </a>
+            <a th:href="@{/anime/liste}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-arrow-left"></i> Listeye Dön
+            </a>
+        </div>
     </div>
 </nav>
 
@@ -111,15 +118,18 @@
                     <h3 class="fw-bold mb-1">
                         <i class="bi bi-pencil-square me-1" th:if="${ualId != null}"></i>
                         <i class="bi bi-plus-circle me-1" th:if="${ualId == null}"></i>
-                        <span th:text="${ualId != null} ? 'Animeyi Düzenle' : 'Yeni Anime Ekle'">Yeni Anime Ekle</span>
+                        <span th:if="${ualId != null}" th:text="'Animeyi Düzenle'">Animeyi Düzenle</span>
+                        <span th:if="${ualId == null and isAdmin}" th:text="'Yeni Anime Ekle'">Yeni Anime Ekle</span>
+                        <span th:if="${ualId == null and !isAdmin}" th:text="'Kütüphaneme Anime Ekle'">Kütüphaneme Anime Ekle</span>
                     </h3>
 
-                    <p class="text-muted small mb-4" th:if="${ualId != null}">
+                    <p class="text-muted small mb-4" th:if="${ualId != null and !isAdmin}">
                         Listendeki bu kaydın izleme durumu, puanı ve bölüm sayısını güncelleyebilirsin.
                     </p>
-
-                    <!-- ============== JİKAN ARAMA (sadece yeni ekleme) ============== -->
-                    <div class="mb-4 position-relative" th:if="${ualId == null}" id="jikanArama">
+                    <p class="text-muted small mb-4" th:if="${ualId == null and !isAdmin}">
+                        Aşağıdaki arama çubuğundan anime arayıp seçtikten sonra izleme bilgilerini doldur.
+                    </p>
+                    <div class="mb-4 position-relative" th:if="${ualId == null and !isAdmin}" id="jikanArama">
 
                         <input type="text"
                                class="form-control"
@@ -131,7 +141,7 @@
                         </div>
                         <div class="jikan-results" id="jikanResults"></div>
                         <small class="text-muted d-block mt-1" id="jikanHint">
-                            En az 3 karakter yaz, sonuçlardan birini seç.
+                            Eklemek istediğin animeyi ara, sonuçlardan birini seç.
                         </small>
                     </div>
 
@@ -141,28 +151,21 @@
                           enctype="multipart/form-data"
                           novalidate
                           id="animeForm">
-
-                        <!-- Global form hatası (örn. BLOB MIME / boyut) -->
                         <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger" role="alert">
                             <ul class="mb-0 ps-3">
                                 <li th:each="err : ${#fields.globalErrors()}" th:text="${err}"></li>
                             </ul>
                         </div>
-
-                        <!-- Düzenleme modunu ayırt eden gizli alan -->
                         <input type="hidden" name="ualId" th:if="${ualId != null}" th:value="${ualId}">
                         <input type="hidden" th:field="*{id}">
-                        <!-- Toplam bölüm: Jikan'dan gelir, gizli (UI'da göstereceğiz ama düzenlenemez) -->
-                        <input type="hidden" th:field="*{toplamBolum}" id="toplamBolumHidden">
-                        <!-- Jikan'dan gelen kapak URL'i — backend bu URL'i indirip BLOB yapacak -->
+                        <input type="hidden" th:field="*{toplamBolum}" id="toplamBolumHidden"
+                               th:if="${!(isAdmin and ualId == null)}">
                         <input type="hidden" name="gorselUrl" id="gorselUrl" value="">
+                        <input type="hidden" name="seciliAnimeId" id="seciliAnimeId" value="">
 
                         <div class="row g-4">
-                            <!-- ============== SOL: GÖRSEL ============== -->
                             <div class="col-md-4 text-center">
                                 <label class="form-label fw-medium d-block">Kapak Görseli</label>
-
-                                <!-- Tek bir önizleme alanı: ya BLOB ya URL ya da placeholder -->
                                 <div th:if="${ualId != null and anime.kapakGorseli != null}">
                                     <img th:src="@{/anime/gorsel/{id}(id=${anime.id})}"
                                          class="preview-cover" alt="Kapak" id="kapakPreview">
@@ -170,26 +173,21 @@
 
                                 <div th:if="${ualId == null or anime.kapakGorseli == null}"
                                      id="kapakWrap">
-                                    <!-- Placeholder (görsel yokken) -->
                                     <div class="preview-cover placeholder" id="kapakPlaceholder">
                                         <i class="bi bi-image" style="font-size:3rem;"></i>
                                     </div>
-                                    <!-- Jikan'dan gelen URL preview (ilk başta gizli) -->
                                     <img id="kapakUrlPreview"
                                          class="preview-cover"
                                          style="display:none;"
                                          alt="Jikan Kapak">
                                 </div>
 
-                                <small class="text-muted d-block mt-2" th:if="${ualId == null}">
-                                    Jikan'dan otomatik indirilecek.
-                                </small>
-                                <small class="text-muted d-block mt-2" th:if="${ualId != null}">
-                                    <i class="bi bi-lock-fill"></i> Görsel MyAnimeList'ten alındı, değiştirilemez.
-                                </small>
+                                <div th:if="${isAdmin}">
+                                    <label class="form-label mt-3 mb-1 small fw-medium">Kendi görselinizi yükleyin (opsiyonel, max 5MB)</label>
+                                    <input type="file" name="kapakDosyasi" accept="image/jpeg,image/png,image/gif,image/webp" class="form-control form-control-sm mt-2">
+                                    <small class="text-muted d-block mt-1">Dosya yüklerseniz Jikan görseli yerine bu kullanılır.</small>
+                                </div>
                             </div>
-
-                            <!-- ============== SAĞ: METİN ALANLARI ============== -->
                             <div class="col-md-8">
 
                                 <div class="mb-3">
@@ -201,9 +199,9 @@
                                            th:classappend="${#fields.hasErrors('animeAdi')} ? 'is-invalid' : ''"
                                            id="animeAdi"
                                            th:field="*{animeAdi}"
-                                           readonly
-                                           placeholder="Önce yukarıdan anime ara"
-                                           required>
+                                           th:placeholder="${isAdmin} ? 'Anime adını girin' : 'Yukarıdaki aramadan seçilecek'"
+                                           required
+                                           th:readonly="${!isAdmin}">
                                     <div class="invalid-feedback" th:if="${#fields.hasErrors('animeAdi')}"
                                          th:errors="*{animeAdi}">Hata</div>
                                 </div>
@@ -216,8 +214,8 @@
                                                th:classappend="${#fields.hasErrors('tur')} ? 'is-invalid' : ''"
                                                id="tur"
                                                th:field="*{tur}"
-                                               readonly
-                                               placeholder="Otomatik dolacak">
+                                               th:placeholder="${isAdmin} ? 'İsteğe bağlı' : 'Otomatik doldurulur'"
+                                               th:readonly="${!isAdmin}">
                                         <div class="invalid-feedback" th:if="${#fields.hasErrors('tur')}"
                                              th:errors="*{tur}">Hata</div>
                                     </div>
@@ -229,8 +227,8 @@
                                                th:classappend="${#fields.hasErrors('yayinYili')} ? 'is-invalid' : ''"
                                                id="yayinYili"
                                                th:field="*{yayinYili}"
-                                               readonly
-                                               min="1900" max="2100" placeholder="—">
+                                               min="1900" max="2100" placeholder="—"
+                                               th:readonly="${!isAdmin}">
                                         <div class="invalid-feedback" th:if="${#fields.hasErrors('yayinYili')}"
                                              th:errors="*{yayinYili}">Hata</div>
                                     </div>
@@ -243,72 +241,90 @@
                                            th:classappend="${#fields.hasErrors('studyo')} ? 'is-invalid' : ''"
                                            id="studyo"
                                            th:field="*{studyo}"
-                                           readonly
-                                           placeholder="Otomatik dolacak">
+                                           th:placeholder="${isAdmin} ? 'İsteğe bağlı' : 'Otomatik doldurulur'"
+                                           th:readonly="${!isAdmin}">
                                     <div class="invalid-feedback" th:if="${#fields.hasErrors('studyo')}"
                                          th:errors="*{studyo}">Hata</div>
                                 </div>
 
-                                <hr class="my-4">
+                                <div th:if="${!isAdmin}" class="alert alert-info small py-2 mb-3">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <span th:if="${ualId == null}">Anime bilgileri seçiminize göre otomatik doldurulur. Sadece izleme bilgilerinizi girebilirsiniz.</span>
+                                    <span th:if="${ualId != null}">Anime bilgilerini sadece admin düzenleyebilir. Siz sadece izleme durumunu, puanı ve bölüm sayısını güncelleyebilirsiniz.</span>
+                                </div>
 
-                                <h6 class="fw-medium mb-3 text-muted">
-                                    <i class="bi bi-bookmark-star me-1"></i> İzleme Bilgilerin
-                                </h6>
-
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="izlemeDurumu" class="form-label fw-medium">
-                                            Durum <span class="text-danger">*</span>
-                                        </label>
-                                        <select class="form-select" id="izlemeDurumu" name="izlemeDurumu" required>
-                                            <option th:each="d : ${izlemeDurumlari}"
-                                                    th:value="${d}"
-                                                    th:text="${d.etiket}"
-                                                    th:selected="${seciliDurum != null and seciliDurum == d}"></option>
-                                        </select>
-                                    </div>
-
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label fw-medium">İzlenen Bölüm</label>
-                                        <div class="bolum-grup">
-                                            <input type="number"
-                                                   class="form-control"
-                                                   id="izlenenBolum"
-                                                   name="izlenenBolum"
-                                                   th:value="${seciliIzlenenBolum}"
-                                                   min="0" placeholder="0">
-                                            <span class="ayrac">/</span>
-                                            <input type="text"
-                                                   class="form-control"
-                                                   id="toplamBolumGoster"
-                                                   th:value="${anime.toplamBolum != null} ? ${anime.toplamBolum} : '?'"
-                                                   readonly>
-                                        </div>
-                                        <small class="text-muted">Tamamlandı seçilirse otomatik eşitlenir.</small>
+                                <div th:if="${isAdmin and ualId == null}">
+                                    <div class="mb-3">
+                                        <label for="toplamBolum" class="form-label fw-medium">Toplam Bölüm</label>
+                                        <input type="number"
+                                               class="form-control"
+                                               id="toplamBolum"
+                                               name="toplamBolum"
+                                               th:value="${anime.toplamBolum}"
+                                               min="1" max="10000" placeholder="Örn: 24">
                                     </div>
                                 </div>
 
-                                <div class="mb-3">
-                                    <label for="puan" class="form-label fw-medium">Puanım</label>
-                                    <select class="form-select" id="puan" name="puan">
-                                        <option value="" th:selected="${seciliPuan == null}">— Puan Verme —</option>
-                                        <option th:each="p : ${#numbers.sequence(10, 1)}"
-                                                th:value="${p}"
-                                                th:text="${p} + ' / 10'"
-                                                th:selected="${seciliPuan != null and seciliPuan == p}"></option>
-                                    </select>
+                                <div th:if="${!isAdmin or ualId != null}">
+                                    <hr class="my-4">
+
+                                    <h6 class="fw-medium mb-3 text-muted">
+                                        <i class="bi bi-bookmark-star me-1"></i> İzleme Bilgilerin
+                                    </h6>
+
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="izlemeDurumu" class="form-label fw-medium">
+                                                Durum <span class="text-danger">*</span>
+                                            </label>
+                                            <select class="form-select" id="izlemeDurumu" name="izlemeDurumu" required>
+                                                <option th:each="d : ${izlemeDurumlari}"
+                                                        th:value="${d}"
+                                                        th:text="${d.etiket}"
+                                                        th:selected="${seciliDurum != null and seciliDurum == d}"></option>
+                                            </select>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-medium">İzlenen Bölüm</label>
+                                            <div class="bolum-grup">
+                                                <input type="number"
+                                                       class="form-control"
+                                                       id="izlenenBolum"
+                                                       name="izlenenBolum"
+                                                       th:value="${seciliIzlenenBolum}"
+                                                       min="0" placeholder="0">
+                                                <span class="ayrac">/</span>
+                                                <input type="text"
+                                                       class="form-control"
+                                                       id="toplamBolumGoster"
+                                                       th:value="${anime.toplamBolum != null} ? ${anime.toplamBolum} : '?'"
+                                                       readonly>
+                                            </div>
+                                            <small class="text-muted">Tamamlandı seçilirse otomatik eşitlenir.</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="puan" class="form-label fw-medium">Puanım</label>
+                                        <select class="form-select" id="puan" name="puan">
+                                            <option value="" th:selected="${seciliPuan == null}">— Puan Verme —</option>
+                                            <option th:each="p : ${#numbers.sequence(10, 1)}"
+                                                    th:value="${p}"
+                                                    th:text="${p} + ' / 10'"
+                                                    th:selected="${seciliPuan != null and seciliPuan == p}"></option>
+                                        </select>
+                                    </div>
                                 </div>
 
                             </div>
                         </div>
-
-                        <!-- ============== AKSİYON BUTONLARI ============== -->
                         <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
                             <a th:href="@{/anime/liste}" class="btn btn-outline-secondary">
                                 <i class="bi bi-x-lg"></i> İptal
                             </a>
                             <button type="submit" class="btn btn-primary px-4" id="kaydetBtn"
-                                    th:disabled="${ualId == null}">
+                                    th:disabled="${ualId == null and !isAdmin}">
                                 <i class="bi bi-check-lg"></i>
                                 <span th:text="${ualId != null} ? ' Güncelle' : ' Kaydet'"> Kaydet</span>
                             </button>
@@ -323,8 +339,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-<!-- ============== ORTAK SCRIPT: Durum ↔ bölüm otomasyonu ============== -->
 <script>
 (function() {
     const durumSel    = document.getElementById('izlemeDurumu');
@@ -372,18 +386,13 @@
         let v = parseInt(izlenenInp.value, 10);
 
         if (isNaN(v) || v < 0) v = 0;
-
-        // Toplamı geçemez (örn: 39'lu animede 123123 yazılırsa 39'a sabitlenir)
         if (tot != null && v > tot) v = tot;
 
         izlenenInp.value = v;
-
-        // İzlenen bölüm = toplam bölüm → otomatik COMPLETED
         if (tot != null && v === tot && seciliDurum() !== 'COMPLETED') {
             durumOlarakAyarla('COMPLETED');
             durumDegisti();
         }
-        // Eğer COMPLETED iken kullanıcı değer düşürürse → WATCHING'e çevir
         else if (tot != null && v < tot && seciliDurum() === 'COMPLETED') {
             durumOlarakAyarla('WATCHING');
             durumDegisti();
@@ -400,9 +409,7 @@
     }
 })();
 </script>
-
-<!-- ============== JİKAN ARAMA SCRIPTI (sadece yeni ekleme modunda yüklü) ============== -->
-<script th:if="${ualId == null}">
+<script th:if="${ualId == null and !isAdmin}">
 (function() {
     const queryInput   = document.getElementById('jikanQuery');
     const resultsBox   = document.getElementById('jikanResults');
@@ -413,6 +420,7 @@
     const yayinYili    = document.getElementById('yayinYili');
     const studyo       = document.getElementById('studyo');
     const gorselUrl    = document.getElementById('gorselUrl');
+    const seciliAnimeId= document.getElementById('seciliAnimeId');
     const kapakPrev    = document.getElementById('kapakUrlPreview');
     const kapakPlace   = document.getElementById('kapakPlaceholder');
     const kaydetBtn    = document.getElementById('kaydetBtn');
@@ -435,7 +443,7 @@
             return;
         }
 
-        debounceTimer = setTimeout(() => sorgula(q), 350);
+        debounceTimer = setTimeout(() => hibritSorgula(q), 350);
     });
 
     document.addEventListener('click', function(e) {
@@ -443,63 +451,193 @@
             resultsBox.classList.remove('show');
         }
     });
-
-    function sorgula(q) {
+    function hibritSorgula(q) {
         if (activeFetch) activeFetch.abort();
         const controller = new AbortController();
         activeFetch = controller;
+        _yerelIdx = -1;
+        _jikanIdx = -1;
 
         spinner.classList.add('show');
         hint.textContent = 'Aranıyor...';
+        const yerelPromise = yerelAra(q, controller.signal);
+        const jikanPromise = jikanAra(q, controller.signal);
 
-        const url = 'https://api.jikan.moe/v4/anime?q=' + encodeURIComponent(q) + '&limit=10&sfw=true';
-        fetch(url, { signal: controller.signal })
-            .then(r => {
-                if (!r.ok) throw new Error('Jikan API yanıtı: ' + r.status);
-                return r.json();
-            })
-            .then(data => {
+        Promise.allSettled([yerelPromise, jikanPromise])
+            .then(([yerelSonuc, jikanSonuc]) => {
                 spinner.classList.remove('show');
-                const list = (data && data.data) || [];
-                if (list.length === 0) {
-                    resultsBox.innerHTML = '<div class="p-3 text-muted small">Sonuç bulunamadı.</div>';
+
+                const yerelListe = yerelSonuc.status === 'fulfilled' ? yerelSonuc.value : [];
+                const jikanListe = jikanSonuc.status === 'fulfilled' ? jikanSonuc.value : [];
+                const jikanHata  = jikanSonuc.status === 'rejected'  ? jikanSonuc.reason : null;
+                const tumSonuclar = [];
+                yerelListe.forEach(a => {
+                    tumSonuclar.push({
+                        kaynak: 'yerel',
+                        data: a
+                    });
+                });
+                const yerelIsimler = new Set(yerelListe.map(a => (a.animeAdi || '').toLowerCase()));
+                jikanListe.forEach(it => {
+                    const jikanIsim = (it.title_english || it.title || '').toLowerCase();
+                    if (!yerelIsimler.has(jikanIsim)) {
+                        tumSonuclar.push({
+                            kaynak: 'jikan',
+                            data: it
+                        });
+                    }
+                });
+
+                if (tumSonuclar.length === 0) {
+                    let mesaj = '<div class="p-3 text-muted small">Sonuç bulunamadı.';
+                    if (jikanHata) {
+                        mesaj += '<br><span class="text-warning">Jikan API hatası: ' + escapeHtml(jikanHata.message) + '</span>';
+                    }
+                    mesaj += '</div>';
+                    resultsBox.innerHTML = mesaj;
                     resultsBox.classList.add('show');
                     hint.textContent = '';
                     return;
                 }
-                resultsBox.innerHTML = list.map(it => kart(it)).join('');
+
+                let html = '';
+                const yerelSonuclar = tumSonuclar.filter(s => s.kaynak === 'yerel');
+                const jikanSonuclar = tumSonuclar.filter(s => s.kaynak === 'jikan');
+
+                if (yerelSonuclar.length > 0) {
+                    html += '<div class="px-3 py-2 bg-light" style="font-size:.75rem;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #e5e7eb;">📁 Katalogdan (' + yerelSonuclar.length + ')</div>';
+                    yerelSonuclar.forEach(s => {
+                        html += yerelKart(s.data);
+                    });
+                }
+
+                if (jikanSonuclar.length > 0) {
+                    html += '<div class="px-3 py-2 bg-light" style="font-size:.75rem;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #e5e7eb;">🌐 Jikan API (' + jikanSonuclar.length + ')</div>';
+                    jikanSonuclar.forEach(s => {
+                        html += jikanKart(s.data);
+                    });
+                }
+
+                if (jikanHata && jikanSonuclar.length === 0) {
+                    html += '<div class="px-3 py-2 text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>Jikan API hatası: ' + escapeHtml(jikanHata.message) + ' — Sadece katalog sonuçları gösteriliyor.</div>';
+                }
+
+                resultsBox.innerHTML = html;
                 resultsBox.classList.add('show');
-                resultsBox.querySelectorAll('.jikan-item').forEach((el, idx) => {
-                    el.addEventListener('click', () => sec(list[idx]));
+                resultsBox.querySelectorAll('.jikan-item[data-kaynak="yerel"]').forEach(el => {
+                    const idx = parseInt(el.dataset.idx, 10);
+                    el.addEventListener('click', () => yerelSec(yerelListe[idx]));
                 });
-                hint.textContent = list.length + ' sonuç bulundu.';
-            })
-            .catch(err => {
-                if (err.name === 'AbortError') return;
-                spinner.classList.remove('show');
-                resultsBox.innerHTML = '<div class="p-3 text-danger small">Hata: ' + err.message + '</div>';
-                resultsBox.classList.add('show');
+                resultsBox.querySelectorAll('.jikan-item[data-kaynak="jikan"]').forEach(el => {
+                    const idx = parseInt(el.dataset.idx, 10);
+                    el.addEventListener('click', () => jikanSec(jikanListe[idx]));
+                });
+
+                const toplamBulunan = tumSonuclar.length;
+                let hintMsg = toplamBulunan + ' sonuç bulundu';
+                if (yerelSonuclar.length > 0) hintMsg += ' (' + yerelSonuclar.length + ' katalog)';
+                if (jikanHata) hintMsg += ' (Jikan API geçici hata)';
+                hint.textContent = hintMsg;
             });
     }
+    function yerelAra(q, signal) {
+        return fetch('/anime/api/ara?q=' + encodeURIComponent(q), { signal })
+            .then(r => {
+                if (!r.ok) throw new Error('Yerel arama hatası: ' + r.status);
+                return r.json();
+            });
+    }
+    function jikanAra(q, signal, deneme) {
+        deneme = deneme || 1;
+        const maxDeneme = 2;
+        const url = 'https://api.jikan.moe/v4/anime?q=' + encodeURIComponent(q) + '&limit=8&sfw=true';
+        return fetch(url, { signal })
+            .then(r => {
+                if (!r.ok) {
+                    if ((r.status === 504 || r.status === 429 || r.status >= 500) && deneme < maxDeneme) {
+                        return new Promise(resolve => setTimeout(resolve, 1500))
+                            .then(() => jikanAra(q, signal, deneme + 1));
+                    }
+                    throw new Error('Jikan API yanıtı: ' + r.status);
+                }
+                return r.json();
+            })
+            .then(data => (data && data.data) || []);
+    }
+    function yerelKart(a) {
+        const tit = escapeHtml(a.animeAdi || '');
+        const yil = a.yayinYili || '—';
+        const ep  = a.toplamBolum ? (a.toplamBolum + ' bölüm') : '';
+        const stud = a.studyo || '';
+        const imgTag = a.gorselVar
+            ? '<img src="/anime/gorsel/' + a.id + '" alt="" onerror="this.style.visibility=\'hidden\'">'
+            : '<div style="width:48px;height:64px;background:#e5e7eb;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#9ca3af;flex-shrink:0"><i class="bi bi-image"></i></div>';
+        const idx = arguments[1] !== undefined ? arguments[1] : 0;
+        return '<div class="jikan-item" data-kaynak="yerel" data-idx="' + yerelIdxCounter() + '">'
+             + imgTag
+             + '<div class="jikan-item-info">'
+             + '<div class="jikan-item-title">' + tit + '</div>'
+             + '<div class="jikan-item-meta">' + yil + (stud ? ' · ' + escapeHtml(stud) : '') + (ep ? ' · ' + ep : '') + '</div>'
+             + '</div>'
+             + '<span style="font-size:.65rem;padding:2px 6px;border-radius:4px;background:#eef2ff;color:#6366f1;font-weight:600;align-self:center;white-space:nowrap">Katalog</span>'
+             + '</div>';
+    }
 
-    function kart(it) {
-        const tit = (it.title_english || it.title || '').replace(/</g,'&lt;');
+    let _yerelIdx = -1;
+    function yerelIdxCounter() { return ++_yerelIdx; }
+
+    function jikanKart(it) {
+        const tit = escapeHtml(it.title_english || it.title || '');
         const yil = it.year || (it.aired && it.aired.from ? new Date(it.aired.from).getFullYear() : '—');
         const tip = it.type || '—';
         const ep  = it.episodes ? (it.episodes + ' bölüm') : '';
         const img = (it.images && it.images.jpg && (it.images.jpg.small_image_url || it.images.jpg.image_url)) || '';
-        return `
-            <div class="jikan-item">
-                <img src="${img}" alt="" onerror="this.style.visibility='hidden'">
-                <div class="jikan-item-info">
-                    <div class="jikan-item-title">${tit}</div>
-                    <div class="jikan-item-meta">${tip} · ${yil}${ep ? ' · ' + ep : ''}</div>
-                </div>
-            </div>
-        `;
+        return '<div class="jikan-item" data-kaynak="jikan" data-idx="' + jikanIdxCounter() + '">'
+             + '<img src="' + img + '" alt="" onerror="this.style.visibility=\'hidden\'">'
+             + '<div class="jikan-item-info">'
+             + '<div class="jikan-item-title">' + tit + '</div>'
+             + '<div class="jikan-item-meta">' + tip + ' · ' + yil + (ep ? ' · ' + ep : '') + '</div>'
+             + '</div>'
+             + '<span style="font-size:.65rem;padding:2px 6px;border-radius:4px;background:#fef3c7;color:#d97706;font-weight:600;align-self:center;white-space:nowrap">Jikan</span>'
+             + '</div>';
     }
 
-    function sec(it) {
+    let _jikanIdx = -1;
+    function jikanIdxCounter() { return ++_jikanIdx; }
+
+    function escapeHtml(str) {
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function yerelSec(a) {
+        animeAdi.value  = (a.animeAdi || '').substring(0, 200);
+        tur.value       = (a.tur || '').substring(0, 100);
+        studyo.value    = (a.studyo || '').substring(0, 100);
+        yayinYili.value = a.yayinYili || '';
+        gorselUrl.value = '';
+        seciliAnimeId.value = a.id || '';
+        toplamHidden.value = a.toplamBolum || '';
+        toplamGoster.value = a.toplamBolum || '?';
+        if (a.gorselVar) {
+            kapakPrev.src = '/anime/gorsel/' + a.id;
+            kapakPrev.style.display = 'block';
+            if (kapakPlace) kapakPlace.style.display = 'none';
+        }
+        const ep = a.toplamBolum || null;
+        if (durumSel.value === 'COMPLETED' && ep) {
+            izlenenInp.value = ep;
+            izlenenInp.readOnly = true;
+        } else if (durumSel.value === 'PLAN_TO_WATCH') {
+            izlenenInp.value = 0;
+        }
+        if (ep) izlenenInp.max = ep;
+
+        kaydetBtn.disabled = false;
+        resultsBox.classList.remove('show');
+        queryInput.value = a.animeAdi || '';
+        hint.textContent = 'Seçildi: ' + (a.animeAdi || '') + (ep ? ' (' + ep + ' bölüm)' : '') + ' [Katalog]. Aşağıdan durum/puan seç.';
+    }
+
+    function jikanSec(it) {
         const baslik = it.title_english || it.title || '';
         const turler = (it.genres || []).map(g => g.name).join(', ');
         const stud   = (it.studios || []).map(s => s.name).join(', ');
@@ -512,17 +650,14 @@
         studyo.value    = stud.substring(0, 100);
         yayinYili.value = yil || '';
         gorselUrl.value = img;
+        seciliAnimeId.value = '';
         toplamHidden.value = ep || '';
         toplamGoster.value = ep || '?';
-
-        // Görsel: placeholder'ı gizle, URL preview'ı göster
         if (img) {
             kapakPrev.src = img;
             kapakPrev.style.display = 'block';
             if (kapakPlace) kapakPlace.style.display = 'none';
         }
-
-        // Bölüm/durum otomasyonunu yeniden uygula (COMPLETED ise eşitle)
         if (durumSel.value === 'COMPLETED' && ep) {
             izlenenInp.value = ep;
             izlenenInp.readOnly = true;
@@ -534,7 +669,7 @@
         kaydetBtn.disabled = false;
         resultsBox.classList.remove('show');
         queryInput.value = baslik;
-        hint.textContent = 'Seçildi: ' + baslik + (ep ? ' (' + ep + ' bölüm)' : '') + '. Aşağıdan durum/puan seç.';
+        hint.textContent = 'Seçildi: ' + baslik + (ep ? ' (' + ep + ' bölüm)' : '') + ' [Jikan]. Aşağıdan durum/puan seç.';
     }
 })();
 </script>

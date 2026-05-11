@@ -29,9 +29,23 @@ Spring Data JPA arayüzleridir.
 - **`CustomUserDetailsService.java`**: Spring Security'nin login ekranında girilen verileri veritabanı ile eşleştirerek doğrulaması için gereken sınıftır.
 - **`UserAnimeListService.java` & `UserAnimeListServiceImpl.java`**: Listeye anime ekleme, çıkarma, güncelleme ve arama algoritmalarını yönetir. Her işlemin sadece listeyi oluşturan kullanıcı tarafından yapılabildiğini (Authorization-Data ownership check) doğrular.
 
----
+## 🚀 Çalıştırma ve Kullanım
 
-# USAGE:
-# 1. Proje dizininde (pom.xml'in olduğu yerde) terminali aç.
-# 2. `./mvnw spring-boot:run` komutunu çalıştır veya IDE üzerinden `AnimeListApplication.java` dosyasını çalıştır.
-# 3. Tarayıcıdan http://localhost:8080 adresine gidip projeyi kullanmaya başla. (MySQL'in açık ve properties'teki kimlik bilgilerinin doğru olduğuna emin ol.)
+### Gereksinimler
+- **MySQL**: Veritabanı bağlantısı için `src/main/resources/application.properties` dosyasındaki kullanıcı adı ve şifreyi kendi sisteminize göre düzeltin (varsayılan olarak `root` / `1234` yapılandırılmıştır).
+
+### Çalıştırma Talimatı
+1. Proje kök dizininde terminali açın.
+2. `mvn spring-boot:run` komutunu çalıştırın veya IDE'niz üzerinden `AnimeListApplication` sınıfını başlatın.
+3. Tarayıcıdan `http://localhost:8080` adresine gidin.
+
+### Test Kullanıcısı
+Uygulama başlatıldığında `data.sql` üzerinden örnek veriler yüklenir. Aşağıdaki hesapla giriş yapabilirsiniz:
+- **Kullanıcı Adı:** `testuser`
+- **Şifre:** `password`
+
+### Önemli Notlar
+- **Görsel Ekleme Yöntemleri:** Anime eklerken iki yöntem kullanabilirsiniz:
+  1. **Jikan Araması:** Üst arama kutusuna anime adını yazarak (en az 3 karakter) Jikan'dan otomatik veri ve görsel URL'si çekebilirsiniz.
+  2. **Yerel Dosya Yükleme:** Form içindeki dosya seçici ile bilgisayarınızdan manuel olarak kapak görseli yükleyebilirsiniz.
+- **BLOB Depolama:** Görseller dosya sistemine yazılmaz; veritabanında `LONGBLOB` formatında güvenli bir şekilde saklanır.

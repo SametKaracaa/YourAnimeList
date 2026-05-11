@@ -8,7 +8,6 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="anime-list-app" />
-        <module name="YourAnimeList" />
       </profile>
     </annotationProcessing>
   </component>

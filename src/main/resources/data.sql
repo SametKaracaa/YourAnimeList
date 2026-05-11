@@ -1,57 +1,32 @@
--- ========================================================
--- ANIME LIST APP - BAŞLANGIÇ VERİLERİ (data.sql)
--- ========================================================
--- Spring Boot başlatıldığında otomatik çalışır
--- (spring.jpa.defer-datasource-initialization=true sayesinde
---  Hibernate şemayı oluşturduktan SONRA çalışır).
---
--- INSERT IGNORE kullanılır → kayıt zaten varsa hata atmaz, atlar.
--- Bu sayede ddl-auto=update modunda her başlatmada güvenle çalışır;
--- kullanıcının kendi eklediği veriler asla silinmez.
---
--- Şema (3 tablo):
---   kullanicilar             (id, kullanici_adi, sifre, email, rol)
---   animeler                 (id, anime_adi, tur, yayin_yili, studyo,
---                             toplam_bolum, kapak_gorseli, gorsel_tipi)
---   kullanici_anime_listesi  (id, kullanici_id, anime_id,
---                             izleme_durumu, puan, izlenen_bolum, eklenme_tarihi)
--- ========================================================
-
-
--- --- 1) TEST KULLANICISI ---
--- Şifre: "password" (BCrypt encoded)
 INSERT IGNORE INTO kullanicilar (id, kullanici_adi, sifre, email, rol) VALUES
 (1, 'testuser',
     '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
     'testuser@example.com',
     'ROLE_USER');
 
-
--- --- 2) ANIME KATALOĞU (kullanıcıdan bağımsız) ---
-INSERT IGNORE INTO animeler (id, anime_adi, tur, yayin_yili, studyo, toplam_bolum) VALUES
+INSERT IGNORE INTO animeler (id, anime_adi, tur, yayin_yili, studyo, toplam_bolum, kataloga_acik) VALUES
 (1, 'Jujutsu Kaisen',
     'Aksiyon, Doğaüstü, Okul',
-    2020, 'MAPPA', 24),
+    2020, 'MAPPA', 24, TRUE),
 
 (2, 'Chainsaw Man',
     'Aksiyon, Karanlık Fantezi, Doğaüstü',
-    2022, 'MAPPA', 12),
+    2022, 'MAPPA', 12, TRUE),
 
 (3, 'JoJo''s Bizarre Adventure: Phantom Blood',
     'Aksiyon, Macera, Doğaüstü',
-    2012, 'David Production', 9),
+    2012, 'David Production', 9, TRUE),
 
 (4, 'Attack on Titan',
     'Aksiyon, Dram, Fantastik',
-    2013, 'Wit Studio', 25),
+    2013, 'Wit Studio', 25, TRUE),
 
 (5, 'Frieren: Beyond Journey''s End',
     'Macera, Dram, Fantastik',
-    2023, 'Madhouse', 28);
+    2023, 'Madhouse', 28, TRUE);
 
+UPDATE animeler SET kataloga_acik = TRUE WHERE id IN (1, 2, 3, 4, 5);
 
--- --- 3) KULLANICI <-> ANIME İLİŞKİLERİ (izleme durumu + puan + ilerleme) ---
--- (kullanici_id, anime_id) çifti UNIQUE → IGNORE güvenli.
 INSERT IGNORE INTO kullanici_anime_listesi
     (kullanici_id, anime_id, izleme_durumu, puan, izlenen_bolum, eklenme_tarihi) VALUES
 (1, 1, 'WATCHING',      9,    15,   NOW()),

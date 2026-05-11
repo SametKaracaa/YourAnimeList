@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       lang="tr">
@@ -23,14 +23,16 @@
     </style>
 </head>
 <body>
-
-<!-- ========== NAVBAR ========== -->
 <nav class="navbar navbar-custom navbar-dark sticky-top">
     <div class="container py-2">
         <a class="navbar-brand fw-bold" th:href="@{/anime/liste}">🎌 YourAnimeList</a>
-        <div class="d-flex align-items-center text-white-50 small">
+        <div class="d-flex align-items-center gap-3 text-white-50 small">
             <i class="bi bi-person-circle me-1"></i>
-            <span class="me-3" th:text="${kullaniciAdi}">user</span>
+            <span class="me-1" th:text="${kullaniciAdi}">user</span>
+            <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/panel}"
+               class="btn btn-sm btn-outline-warning">
+                <i class="bi bi-shield-lock me-1"></i>Admin Panel
+            </a>
             <form th:action="@{/cikis}" method="post" class="m-0">
                 <button type="submit" class="btn btn-sm btn-outline-light">
                     <i class="bi bi-box-arrow-right"></i> Çıkış
@@ -41,8 +43,6 @@
 </nav>
 
 <div class="container my-4">
-
-    <!-- ========== FLASH MESAJLARI ========== -->
     <div th:if="${basariMesaji}" class="alert alert-success alert-dismissible fade show" role="alert">
         <i class="bi bi-check-circle me-1"></i> <span th:text="${basariMesaji}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -51,8 +51,6 @@
         <i class="bi bi-exclamation-triangle me-1"></i> <span th:text="${hataMesaji}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
-
-    <!-- ========== İSTATİSTİK KARTLARI ========== -->
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-3">
             <div class="card stat-card glass-panel border-0 h-100">
@@ -90,8 +88,6 @@
             </div>
         </div>
     </div>
-
-    <!-- ========== ARAMA / FİLTRE FORMU ========== -->
     <div class="card glass-panel border-0 mb-4">
         <div class="card-body">
             <form th:action="@{/anime/liste}" method="get" class="row g-2 align-items-end">
@@ -153,8 +149,6 @@
             </form>
         </div>
     </div>
-
-    <!-- ========== ÜST AKSİYON BAR ========== -->
     <div class="d-flex justify-content-between align-items-center mb-3 text-white">
         <h5 class="m-0">
             <i class="bi bi-collection-play me-1"></i>
@@ -162,25 +156,20 @@
             <span class="badge bg-secondary ms-1" th:text="${#lists.size(liste)}">0</span>
         </h5>
         <div class="d-flex gap-2">
-            <!-- Sıralama Dropdown (Filtreleri kaybetmemek için hidden inputlar içerir) -->
             <form th:action="@{/anime/liste}" method="get" class="m-0 d-flex align-items-center gap-1" id="sortForm">
                 <input type="hidden" name="isim" th:value="${aramaIsim}">
                 <input type="hidden" name="tur" th:value="${aramaTur}">
                 <input type="hidden" name="studyo" th:value="${aramaStudyo}">
                 <input type="hidden" name="yilStr" th:value="${aramaYil}">
                 <input type="hidden" name="durum" th:value="${aramaDurum}">
-                
-                <!-- Yön (asc/desc) tutan input -->
                 <input type="hidden" name="yon" id="sortYon" th:value="${aramaYon != null ? aramaYon : 'desc'}">
                 
-                <select name="siralama" class="form-select form-select-sm" onchange="document.getElementById('sortForm').submit()" style="min-width: 170px; cursor: pointer;">
-                    <option value="eklenmeTarihi" th:selected="${aramaSiralama == null or aramaSiralama == 'eklenmeTarihi'}">📅 Ekleme Tarihine Göre</option>
-                    <option value="yayinYili" th:selected="${aramaSiralama == 'yayinYili'}">🎬 Çıkış Tarihine Göre</option>
-                    <option value="puan" th:selected="${aramaSiralama == 'puan'}">⭐ Puana Göre</option>
-                    <option value="animeAdi" th:selected="${aramaSiralama == 'animeAdi'}">🔤 İsme Göre</option>
+                <select name="siralama" class="form-select form-select-sm" onchange="document.getElementById('sortForm').submit()" style="min-width: 190px; cursor: pointer;">
+                    <option value="eklenmeTarihi" th:selected="${aramaSiralama == null or aramaSiralama == 'eklenmeTarihi'}">Ekleme Tarihine Göre</option>
+                    <option value="yayinYili" th:selected="${aramaSiralama == 'yayinYili'}">Çıkış Tarihine Göre</option>
+                    <option value="puan" th:selected="${aramaSiralama == 'puan'}">Puana Göre</option>
+                    <option value="animeAdi" th:selected="${aramaSiralama == 'animeAdi'}">İsme Göre</option>
                 </select>
-                
-                <!-- Yön Değiştirici Buton -->
                 <button type="button" class="btn btn-sm btn-outline-light" onclick="toggleSortDirection()" title="Sıralama Yönünü Çevir">
                     <i class="bi" th:classappend="${aramaYon == 'asc' ? 'bi-sort-up' : 'bi-sort-down'}"></i>
                 </button>
@@ -190,8 +179,6 @@
             </a>
         </div>
     </div>
-
-    <!-- ========== LİSTE BOŞ DURUMU ========== -->
     <div th:if="${#lists.isEmpty(liste)}" class="card glass-panel border-0">
         <div class="card-body text-center py-5">
             <div class="display-1 mb-2">📺</div>
@@ -202,19 +189,13 @@
             </a>
         </div>
     </div>
-
-    <!-- ========== KART GRID ========== -->
     <div class="row g-3" th:unless="${#lists.isEmpty(liste)}">
         <div class="col-6 col-md-4 col-lg-3" th:each="ual : ${liste}">
             <div class="card anime-card glass-panel border-0 h-100">
-
-                <!-- Kapak görseli: HTTP endpoint (browser cache) -->
                 <img th:if="${ual.anime.kapakGorseli != null}"
                      th:src="@{/anime/gorsel/{id}(id=${ual.anime.id})}"
                      class="card-img-top anime-cover"
                      th:alt="${ual.anime.animeAdi}">
-
-                <!-- Kapak yoksa placeholder -->
                 <div th:if="${ual.anime.kapakGorseli == null}"
                      class="anime-cover d-flex align-items-center justify-content-center text-white-50">
                     <i class="bi bi-image" style="font-size:3rem;"></i>
@@ -247,11 +228,13 @@
                            class="btn btn-sm btn-outline-primary flex-fill" title="Düzenle">
                             <i class="bi bi-pencil"></i>
                         </a>
-                        <a th:href="@{/anime/sil/{id}(id=${ual.id})}"
-                           class="btn btn-sm btn-outline-danger flex-fill" title="Sil"
-                           onclick="return confirm('Bu kaydı listenizden silmek istediğinize emin misiniz?');">
-                            <i class="bi bi-trash"></i>
-                        </a>
+                        <form th:action="@{/anime/sil/{id}(id=${ual.id})}" method="post" 
+                              class="flex-fill m-0"
+                              onsubmit="return confirm('Bu kaydı listenizden silmek istediğinize emin misiniz?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger w-100" title="Sil">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>

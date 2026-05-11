@@ -37,6 +37,8 @@ public class Anime {
     @Size(max = 50)
     @Column(name = "gorsel_tipi", length = 50)
     private String gorselTipi;
+    @Column(name = "kataloga_acik", nullable = false, columnDefinition = "BOOLEAN NOT NULL DEFAULT FALSE")
+    private boolean katalogaAcik = false;
     @OneToMany(
             mappedBy = "anime",
             cascade = CascadeType.ALL,
@@ -60,6 +62,8 @@ public class Anime {
     public void setKapakGorseli(byte[] kapakGorseli) { this.kapakGorseli = kapakGorseli; }
     public String getGorselTipi() { return gorselTipi; }
     public void setGorselTipi(String gorselTipi) { this.gorselTipi = gorselTipi; }
+    public boolean isKatalogaAcik() { return katalogaAcik; }
+    public void setKatalogaAcik(boolean katalogaAcik) { this.katalogaAcik = katalogaAcik; }
     public List<UserAnimeList> getKullaniciListeleri() { return kullaniciListeleri; }
     public void setKullaniciListeleri(List<UserAnimeList> kullaniciListeleri) {
         this.kullaniciListeleri = kullaniciListeleri;

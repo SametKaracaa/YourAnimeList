@@ -13,30 +13,34 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
     private final CustomUserDetailsService customUserDetailsService;
-    public SecurityConfig(CustomUserDetailsService customUserDetailsService) {
+    private final CustomAuthenticationSuccessHandler successHandler;
+    public SecurityConfig(CustomUserDetailsService customUserDetailsService,
+                          CustomAuthenticationSuccessHandler successHandler) {
         this.customUserDetailsService = customUserDetailsService;
+        this.successHandler = successHandler;
     }
     @Bean
     public SecurityFilterChain guvenlikFiltreZinciri(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(yetki -> yetki
                 .requestMatchers("/giris", "/kayit", "/css/**", "/js/**").permitAll()
+                .requestMatchers("/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
-                .loginPage("/giris")                          
-                .loginProcessingUrl("/giris-yap")             
-                .usernameParameter("kullaniciAdi")            
-                .passwordParameter("sifre")                   
-                .defaultSuccessUrl("/anime/liste", true)      
-                .failureUrl("/giris?hata=true")               
+                .loginPage("/giris")
+                .loginProcessingUrl("/giris-yap")
+                .usernameParameter("kullaniciAdi")
+                .passwordParameter("sifre")
+                .successHandler(successHandler)
+                .failureUrl("/giris?hata=true")
                 .permitAll()
             )
             .logout(cikis -> cikis
-                .logoutUrl("/cikis")                          
-                .logoutSuccessUrl("/giris?cikis=true")        
-                .invalidateHttpSession(true)                  
-                .deleteCookies("JSESSIONID")                  
+                .logoutUrl("/cikis")
+                .logoutSuccessUrl("/giris?cikis=true")
+                .invalidateHttpSession(true)
+                .deleteCookies("JSESSIONID")
                 .permitAll()
             )
             .userDetailsService(customUserDetailsService);

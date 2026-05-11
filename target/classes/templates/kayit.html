@@ -18,21 +18,20 @@
                 <div class="card-body p-4 p-md-5">
 
                     <div class="text-center mb-4">
-                        <div class="display-5 mb-2">✨</div>
+                        <div class="d-inline-flex align-items-center justify-content-center rounded-3 mb-3"
+                             style="width:64px;height:64px;background:#dbeafe;">
+                            <i class="bi bi-person-plus-fill" style="font-size:2rem;color:#2563eb;"></i>
+                        </div>
                         <h2 class="fw-bold mb-1">Hesap Oluştur</h2>
                         <p class="text-muted small mb-0">Anime listenizi takip etmeye başlayın</p>
                     </div>
 
                     <form th:action="@{/kayit}" th:object="${user}" method="post" novalidate>
-
-                        <!-- Global (form-wide) hata; ör. registration.error -->
                         <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger" role="alert">
                             <ul class="mb-0 ps-3">
                                 <li th:each="err : ${#fields.globalErrors()}" th:text="${err}"></li>
                             </ul>
                         </div>
-
-                        <!-- Kullanıcı Adı -->
                         <div class="mb-3">
                             <label for="kullaniciAdi" class="form-label fw-medium">Kullanıcı Adı</label>
                             <div class="input-group has-validation">
@@ -48,8 +47,6 @@
                                      th:errors="*{kullaniciAdi}">Hata</div>
                             </div>
                         </div>
-
-                        <!-- E-posta -->
                         <div class="mb-3">
                             <label for="email" class="form-label fw-medium">E-posta</label>
                             <div class="input-group has-validation">
@@ -65,8 +62,6 @@
                                      th:errors="*{email}">Hata</div>
                             </div>
                         </div>
-
-                        <!-- Şifre -->
                         <div class="mb-4">
                             <label for="sifre" class="form-label fw-medium">Şifre</label>
                             <div class="input-group has-validation">

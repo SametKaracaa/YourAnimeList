@@ -12,6 +12,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -79,7 +80,7 @@ public class AnimeController {
         return "anime-listesi";
     }
     @GetMapping("/ekle")
-    public String ekleFormu(Model model) {
+    public String ekleFormu(Authentication authentication, Model model) {
         if (!model.containsAttribute("anime")) {
             model.addAttribute("anime", new Anime());
         }
@@ -88,6 +89,7 @@ public class AnimeController {
         model.addAttribute("seciliPuan", null);
         model.addAttribute("seciliIzlenenBolum", null);
         model.addAttribute("izlemeDurumlari", IzlemeDurumu.values());
+        model.addAttribute("isAdmin", adminMi(authentication));
         return "anime-form";
     }
     @GetMapping("/duzenle/{ualId}")
@@ -108,49 +110,78 @@ public class AnimeController {
         model.addAttribute("seciliPuan", ual.getPuan());
         model.addAttribute("seciliIzlenenBolum", ual.getIzlenenBolum());
         model.addAttribute("izlemeDurumlari", IzlemeDurumu.values());
+        model.addAttribute("isAdmin", adminMi(authentication));
         return "anime-form";
     }
     @PostMapping("/kaydet")
     public String kaydet(@Valid @ModelAttribute("anime") Anime anime,
                          BindingResult bindingResult,
                          @RequestParam(value = "ualId", required = false) Long ualId,
-                         @RequestParam(value = "izlemeDurumu") IzlemeDurumu izlemeDurumu,
+                         @RequestParam(value = "izlemeDurumu", required = false) IzlemeDurumu izlemeDurumu,
                          @RequestParam(value = "puan", required = false) Integer puan,
                          @RequestParam(value = "izlenenBolum", required = false) Integer izlenenBolum,
                          @RequestParam(value = "kapakDosyasi", required = false) MultipartFile kapakDosyasi,
                          @RequestParam(value = "gorselUrl", required = false) String gorselUrl,
+                         @RequestParam(value = "seciliAnimeId", required = false) Long seciliAnimeId,
                          Authentication authentication,
                          Model model,
                          RedirectAttributes redirectAttributes) {
-        if (bindingResult.hasErrors()) {
-            geriDolduFormu(model, ualId, izlemeDurumu, puan, izlenenBolum);
-            return "anime-form";
-        }
         User user = oturumKullanicisi(authentication);
+        boolean isAdmin = adminMi(authentication);
         try {
             if (ualId == null) {
-                Anime kaydedilen = animeService.animeKaydetUrlGorselle(anime, kapakDosyasi, gorselUrl);
-                ualService.listeyeEkle(user, kaydedilen.getId(), izlemeDurumu, puan, izlenenBolum);
-                redirectAttributes.addFlashAttribute("basariMesaji",
-                        "\"" + kaydedilen.getAnimeAdi() + "\" listenize eklendi.");
+                if (seciliAnimeId != null) {
+                    Anime mevcutAnime = animeService.animeGetir(seciliAnimeId)
+                            .orElseThrow(() -> new EntityNotFoundException(
+                                    "Seçilen anime katalogda bulunamadı."));
+                    if (!isAdmin && !mevcutAnime.isKatalogaAcik()) {
+                        throw new EntityNotFoundException(
+                                "Seçilen anime genel katalogda bulunamadı.");
+                    }
+                    ualService.listeyeEkle(user, mevcutAnime.getId(), izlemeDurumu, puan, izlenenBolum);
+                    redirectAttributes.addFlashAttribute("basariMesaji",
+                            "\"" + mevcutAnime.getAnimeAdi() + "\" listenize eklendi.");
+                } else if (!isAdmin) {
+                    if (bindingResult.hasErrors()) {
+                        geriDolduFormu(model, ualId, izlemeDurumu, puan, izlenenBolum, isAdmin);
+                        return "anime-form";
+                    }
+                    anime.setKatalogaAcik(false);
+                    Anime kaydedilen = animeService.animeKaydetUrlGorselle(anime, null, gorselUrl);
+                    ualService.listeyeEkle(user, kaydedilen.getId(), izlemeDurumu, puan, izlenenBolum);
+                    redirectAttributes.addFlashAttribute("basariMesaji",
+                            "\"" + kaydedilen.getAnimeAdi() + "\" kişisel kütüphanenize eklendi.");
+                } else {
+                    if (bindingResult.hasErrors()) {
+                        geriDolduFormu(model, ualId, izlemeDurumu, puan, izlenenBolum, isAdmin);
+                        return "anime-form";
+                    }
+                    anime.setKatalogaAcik(true);
+                    Anime kaydedilen = animeService.animeKaydetUrlGorselle(anime, kapakDosyasi, gorselUrl);
+                    redirectAttributes.addFlashAttribute("basariMesaji",
+                            "\"" + kaydedilen.getAnimeAdi() + "\" Genel Kataloğa eklendi.");
+                    return "redirect:/admin/animeler";
+                }
             } else {
                 UserAnimeList mevcut = ualService.kayitGetir(ualId, user)
                         .orElseThrow(() -> new EntityNotFoundException(
                                 "Liste kaydı bulunamadı: id=" + ualId));
-                Anime hedefAnime = mevcut.getAnime();
-                hedefAnime.setAnimeAdi(anime.getAnimeAdi());
-                hedefAnime.setTur(anime.getTur());
-                hedefAnime.setYayinYili(anime.getYayinYili());
-                hedefAnime.setStudyo(anime.getStudyo());
-                hedefAnime.setToplamBolum(anime.getToplamBolum());
-                animeService.animeKaydetUrlGorselle(hedefAnime, kapakDosyasi, gorselUrl);
+                if (isAdmin) {
+                    Anime hedefAnime = mevcut.getAnime();
+                    hedefAnime.setAnimeAdi(anime.getAnimeAdi());
+                    hedefAnime.setTur(anime.getTur());
+                    hedefAnime.setYayinYili(anime.getYayinYili());
+                    hedefAnime.setStudyo(anime.getStudyo());
+                    hedefAnime.setToplamBolum(anime.getToplamBolum());
+                    animeService.animeKaydetUrlGorselle(hedefAnime, kapakDosyasi, gorselUrl);
+                }
                 ualService.kaydiGuncelle(ualId, user, izlemeDurumu, puan, izlenenBolum);
                 redirectAttributes.addFlashAttribute("basariMesaji",
                         "Liste kaydınız güncellendi.");
             }
         } catch (IllegalArgumentException ex) {
             bindingResult.reject("anime.image.error", ex.getMessage());
-            geriDolduFormu(model, ualId, izlemeDurumu, puan, izlenenBolum);
+            geriDolduFormu(model, ualId, izlemeDurumu, puan, izlenenBolum, isAdmin);
             return "anime-form";
         } catch (IllegalStateException ex) {
             redirectAttributes.addFlashAttribute("hataMesaji", ex.getMessage());
@@ -162,7 +193,7 @@ public class AnimeController {
         }
         return "redirect:/anime/liste";
     }
-    @GetMapping("/sil/{ualId}")
+    @PostMapping("/sil/{ualId}")
     public String sil(@PathVariable Long ualId,
                       Authentication authentication,
                       RedirectAttributes redirectAttributes) {
@@ -193,6 +224,30 @@ public class AnimeController {
                 .header(HttpHeaders.CACHE_CONTROL, "public, max-age=3600")
                 .body(anime.getKapakGorseli());
     }
+
+    @GetMapping("/api/ara")
+    @ResponseBody
+    public java.util.List<java.util.Map<String, Object>> yerelArama(
+            @RequestParam(value = "q", required = false) String sorgu) {
+        java.util.List<java.util.Map<String, Object>> sonuclar = new java.util.ArrayList<>();
+        if (sorgu == null || sorgu.trim().length() < 2) {
+            return sonuclar;
+        }
+        java.util.List<Anime> animeler = animeService.kataloguAra(sorgu.trim(), null, null, null);
+        for (Anime a : animeler) {
+            java.util.Map<String, Object> map = new java.util.LinkedHashMap<>();
+            map.put("id", a.getId());
+            map.put("animeAdi", a.getAnimeAdi());
+            map.put("tur", a.getTur());
+            map.put("yayinYili", a.getYayinYili());
+            map.put("studyo", a.getStudyo());
+            map.put("toplamBolum", a.getToplamBolum());
+            map.put("gorselVar", a.getKapakGorseli() != null);
+            map.put("kaynak", "yerel");
+            sonuclar.add(map);
+        }
+        return sonuclar;
+    }
     private User oturumKullanicisi(Authentication authentication) {
         String kullaniciAdi = authentication.getName();
         return userService.kullaniciAdiylaGetir(kullaniciAdi)
@@ -219,11 +274,20 @@ public class AnimeController {
         }
     }
     private void geriDolduFormu(Model model, Long ualId,
-                                IzlemeDurumu izlemeDurumu, Integer puan, Integer izlenenBolum) {
+                                IzlemeDurumu izlemeDurumu, Integer puan, Integer izlenenBolum,
+                                boolean isAdmin) {
         model.addAttribute("ualId", ualId);
         model.addAttribute("seciliDurum", izlemeDurumu);
         model.addAttribute("seciliPuan", puan);
         model.addAttribute("seciliIzlenenBolum", izlenenBolum);
         model.addAttribute("izlemeDurumlari", IzlemeDurumu.values());
+        model.addAttribute("isAdmin", isAdmin);
+    }
+
+    private boolean adminMi(Authentication authentication) {
+        if (authentication == null) return false;
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(a -> a.equals("ROLE_ADMIN"));
     }
 }

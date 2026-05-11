@@ -56,7 +56,7 @@ public class AnimeServiceImpl implements AnimeService {
     }
     @Override
     public List<Anime> tumKatalog() {
-        return animeRepository.findAllByOrderByAnimeAdiAsc();
+        return animeRepository.findAllByKatalogaAcikTrueOrderByAnimeAdiAsc();
     }
     @Override
     @Transactional

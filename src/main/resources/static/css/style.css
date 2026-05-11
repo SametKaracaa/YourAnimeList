@@ -1,8 +1,3 @@
-/* ===================================================
-   🎌 ANIME LIST APP - PREMIUM DESIGN SYSTEM
-   Design: Indigo & Vibrant Modern Aesthetic
-   =================================================== */
-
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 
 :root {
@@ -25,7 +20,6 @@ body {
     min-height: 100vh;
 }
 
-/* Glassmorphism Containers */
 .glass-panel {
     background: var(--glass-bg);
     backdrop-filter: blur(12px);
@@ -35,14 +29,12 @@ body {
     box-shadow: var(--card-shadow);
 }
 
-/* Custom Navbar */
 .navbar-custom {
     background: rgba(15, 23, 42, 0.85);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Premium Card Design */
 .card {
     border: none;
     border-radius: 20px;
@@ -59,7 +51,6 @@ body {
     border: none;
 }
 
-/* Table Enhancements */
 .table-container {
     border-radius: 15px;
     overflow: hidden;
@@ -86,7 +77,6 @@ body {
     box-shadow: 0 5px 15px rgba(0,0,0,0.05);
 }
 
-/* Status Badges */
 .badge-premium {
     border-radius: 8px;
     padding: 0.5em 0.8em;
@@ -99,7 +89,6 @@ body {
 .badge-dropped { background-color: #fee2e2; color: #991b1b; }
 .badge-plan { background-color: #f1f5f9; color: #475569; }
 
-/* Custom Inputs */
 .form-control, .form-select {
     border-radius: 10px;
     padding: 0.75rem;
@@ -111,7 +100,6 @@ body {
     border-color: var(--primary-color);
 }
 
-/* Buttons */
 .btn-premium {
     border-radius: 12px;
     padding: 0.6rem 1.5rem;
@@ -131,7 +119,6 @@ body {
     color: white;
 }
 
-/* Autocomplete Dropdown Customization */
 #autocompleteListesi {
     border-radius: 12px;
     border: 1px solid #e2e8f0;
@@ -147,12 +134,10 @@ body {
     border-bottom: none;
 }
 
-/* Toast Positioning */
 .toast-container {
     z-index: 2000;
 }
 
-/* Scrollbar Customization */
 ::-webkit-scrollbar {
     width: 8px;
 }
